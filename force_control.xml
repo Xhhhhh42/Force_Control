@@ -1,0 +1,8 @@
+<library path="force_control">
+    <class name="force_control/Impedance_Controller"
+           type="force_control::Impedance_Controller" base_class_type="controller_interface::ControllerInterface">
+        <description>
+            The joint impedance example controller in a very compliant periodic movement.
+        </description>
+    </class>
+</library>
