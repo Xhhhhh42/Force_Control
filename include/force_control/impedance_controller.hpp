@@ -8,8 +8,13 @@
 #include <franka_semantic_components/franka_robot_model.hpp>
 #include <rclcpp/rclcpp.hpp>
 
+#include <force_control/state_in_joint_space.hpp>
+#include <force_control/task_space_controller.hpp>
+#include <force_control/joint_space_controller.hpp>
+
+#include <force_control/franka_robot_model_extended.hpp>
+
 using CallbackReturn = rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn;
-using Vector7d = Eigen::Matrix<double, 7, 1>;
 
 namespace force_control {
 
@@ -33,31 +38,11 @@ public:
     CallbackReturn on_activate( const rclcpp_lifecycle::State& previous_state ) override;
 
 private:
-    void updateJointStates();
+    void update_Joint_States();
 
-    /**
-     * @brief Calculates the new pose based on the initial pose.
-     *
-     * @return  Eigen::Vector3d calculated sinosuidal period for the x,z position of the pose.
-     */
-    Eigen::Vector3d compute_new_position();
+    bool update_jacobian_pseudo_inverse( Eigen::Matrix3d &Lambda );
 
-    /**
-     * @brief Calculates the new pose based on the initial pose.
-     *
-     * @return  Eigen::Vector3d calculated sinosuidal period for the x,z position of the pose.
-     */
-    Vector7d compute_new_position( const rclcpp::Duration& period );
-
-    /**
-     * @brief computes the torque commands based on impedance control law with compensated coriolis
-     * terms
-     *
-     * @return Eigen::Vector7d torque for each joint of the robot
-     */
-    Vector7d compute_torque_command(const Vector7d& joint_positions_desired,
-                                    const Vector7d& joint_positions_current,
-                                    const Vector7d& joint_velocities_current);
+    bool update_state_in_JS_();
 
     /**
      * @brief assigns the Kp, Kd and arm_id parameters
@@ -68,31 +53,31 @@ private:
 
     std::string arm_id_;
     const int num_joints = 7;
-    Vector7d q_;
-    Vector7d initial_q_;
-    Vector7d dq_;
-    Vector7d dq_filtered_;
-    Vector7d k_gains_;
-    Vector7d d_gains_;
+    std::string controller_type_;
+    double Lambda_d_ts_;
+    double K_d_ts_;
+    double D_d_ts_;
+    double K_D_ts_;
+    Eigen::Matrix<double, 7, 1> k_gains_js_;
+    Eigen::Matrix<double, 7, 1> d_gains_js_;
 
     Eigen::Quaterniond orientation_;
     Eigen::Vector3d position_;
 
-    double elapsed_time_{0.0};
-    double trajectory_period_{0.001};
+    std::shared_ptr<State_in_Joint_Space> state_in_JS_;
+    std::shared_ptr<Task_Space_Controller> task_space_controller_;
+    std::shared_ptr<Joint_Space_Controller> joint_space_controller_;
 
     //test
     int num_joints_{7};
 
-    std::vector<double> joint_positions_desired_;
     std::vector<double> joint_positions_current_{0, 0, 0, 0, 0, 0, 0};
     std::vector<double> joint_velocities_current_{0, 0, 0, 0, 0, 0, 0};
 
-    // std::unique_ptr<franka_semantic_components::FrankaCartesianPoseInterface> franka_cartesian_pose_;
-    std::unique_ptr<franka_semantic_components::FrankaRobotModel> franka_robot_model_;
+    std::unique_ptr<FrankaRobotModelExtended> franka_robot_model_;
+    
     const std::string k_robot_state_interface_name{"robot_state"};
     const std::string k_robot_model_interface_name{"robot_model"};
-
 };
 
 }  // namespace force_control

@@ -22,6 +22,10 @@ add_library(
         ${PROJECT_NAME}
         SHARED
         src/impedance_controller.cpp
+        src/state_in_joint_space.cpp
+        src/state_in_task_space.cpp
+        src/task_space_controller.cpp
+        src/joint_space_controller.cpp
 )
 
 target_include_directories(

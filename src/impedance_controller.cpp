@@ -9,6 +9,8 @@
 
 namespace force_control {
 
+using Vector7d = Eigen::Matrix<double, 7, 1>;
+
 /// @brief output: torque/effort
 /// @return 
 controller_interface::InterfaceConfiguration
@@ -34,6 +36,7 @@ Impedance_Controller::state_interface_configuration() const
   for (int i = 1; i <= num_joints; ++i) {
     config.names.push_back(arm_id_ + "_joint" + std::to_string(i) + "/position");
     config.names.push_back(arm_id_ + "_joint" + std::to_string(i) + "/velocity");
+    // config.names.push_back(arm_id_ + "_joint" + std::to_string(i) + "/effort");
   }
 
   for (const auto& franka_robot_model_name : franka_robot_model_->get_state_interface_names()) {
@@ -51,56 +54,55 @@ Impedance_Controller::state_interface_configuration() const
 controller_interface::return_type Impedance_Controller::update( const rclcpp::Time& ,
                                                                 const rclcpp::Duration& period ) 
 {
-  updateJointStates();
-  Vector7d q_goal = compute_new_position( period );
+  update_Joint_States();
+  update_state_in_JS_();
 
-  //test
-  // Eigen::Vector3d new_position = compute_new_position();
-  // Vector7d joint_positions_desired_eigen(joint_positions_desired_.data());
-  Vector7d joint_positions_current_eigen(joint_positions_current_.data());
-  Vector7d joint_velocities_current_eigen(joint_velocities_current_.data());
+  // std::ofstream out("/home/forcecontrol/Downloads/output.text", std::ios::app);
+  // if (out.is_open()) {
+  //   out<<std::fixed<<std::setprecision(4) << "q_goal:   " <<q_goal[0]<<","<<q_goal[1]<<","<<q_goal[2] 
+  //                                                                   <<","<<q_goal[3]<<","<<q_goal[4]<<","<<q_goal[5]
+  //                                                                   <<","<<q_goal[6]<< std::endl;
+  //   out<<std::fixed<<std::setprecision(4) << "state_in_JS_->q_:    " <<state_in_JS_->q_[0]<<","<<state_in_JS_->q_[1]<<","<<state_in_JS_->q_[2] 
+  //                                                                   <<","<<state_in_JS_->q_[3]<<","<<state_in_JS_->q_[4]<<","<<state_in_JS_->q_[5]
+  //                                                                   <<","<<state_in_JS_->q_[6]<< std::endl;
+  //   out<<std::fixed<<std::setprecision(4) << "joint_controller:   " <<tau_d_calculated[0]<<","<<tau_d_calculated[1]<<","<<tau_d_calculated[2] 
+  //                                                                   <<","<<tau_d_calculated[3]<<","<<tau_d_calculated[4]<<","<<tau_d_calculated[5]
+  //                                                                   <<","<<tau_d_calculated[6]<< std::endl;
+  //   out << "-------------------------------------------------------------------------" << std::endl;
+  //   out.close(); // Close the file after logging data
+  // } else {
+  //   std::cerr << "Unable to open log file\n";
+  // }
 
-  auto tau_d_calculated = compute_torque_command(
-      q_goal, joint_positions_current_eigen, joint_velocities_current_eigen);
-  
-  for (int i = 0; i < num_joints; ++i) {
-    command_interfaces_[i].set_value(tau_d_calculated(i));
-  }
+  if( controller_type_ == "task_space_controller" ) {
+    // Option 1: Use Task Sapce Controller
+    auto tau_d_tsc = task_space_controller_->update();
+    for (int i = 0; i < num_joints; ++i) {
+      command_interfaces_[i].set_value(tau_d_tsc(i));
+    }
+  } else if( controller_type_ == "joint_space_controller" ) {
+    // Option 2: Use Joint Sapce Controller
+    auto tau_d_jsc = joint_space_controller_->update( period );
+    for (int i = 0; i < num_joints; ++i) {
+      command_interfaces_[i].set_value(tau_d_jsc(i));
+    }  
+  }  
+
   return controller_interface::return_type::OK;
-}
-
-
-Vector7d Impedance_Controller::compute_torque_command( const Vector7d& joint_positions_desired,
-                                                       const Vector7d& joint_positions_current,
-                                                       const Vector7d& joint_velocities_current ) 
-{
-  //test
-  std::array<double, 49> mass_matrix_array = franka_robot_model_->getMassMatrix();
-  // Convert std::array to Eigen::Matrix
-  Eigen::Map<const Eigen::Matrix<double, 7, 7>> mass_matrix(mass_matrix_array.data());
-  
-
-  const double kAlpha = 0.99;
-  dq_filtered_ = (1 - kAlpha) * dq_filtered_ + kAlpha * joint_velocities_current;
-  Vector7d q_error = joint_positions_desired - joint_positions_current;
-
-  Vector7d mass_compenent = mass_matrix * q_error;
-
-  // Vector7d tau_d_calculated =
-  //     k_gains_.cwiseProduct(q_error) - d_gains_.cwiseProduct(dq_filtered_) + mass_compenent;
-  Vector7d tau_d_calculated =
-      k_gains_.cwiseProduct( q_error ) + d_gains_.cwiseProduct(-dq_filtered_);
-
-  return tau_d_calculated;
 }
 
 
 CallbackReturn Impedance_Controller::on_init() 
 {
   try {
-    auto_declare<std::string>("arm_id", "panda");
-    auto_declare<std::vector<double>>("k_gains", {});
-    auto_declare<std::vector<double>>("d_gains", {});
+    auto_declare<std::string>( "arm_id", "panda" );
+    auto_declare<std::string>( "controller", "task_space_controller" );
+    auto_declare<double>( "Lambda_d_ts", 1.0 );
+    auto_declare<double>( "K_d_ts", 100.0 );
+    auto_declare<double>( "D_d_ts", 20.0 );
+    auto_declare<double>( "K_D_ts", 1.0 );
+    auto_declare<std::vector<double>>("k_gains_js", {});
+    auto_declare<std::vector<double>>("d_gains_js", {});
   } catch (const std::exception& e) {
     fprintf(stderr, "Exception thrown during init stage with message: %s \n", e.what());
     return CallbackReturn::ERROR;
@@ -118,12 +120,13 @@ CallbackReturn Impedance_Controller::on_configure( const rclcpp_lifecycle::State
     return CallbackReturn::FAILURE;
   }
 
-  dq_filtered_.setZero();
-
-  //test
-  franka_robot_model_ = std::make_unique<franka_semantic_components::FrankaRobotModel>(
-      franka_semantic_components::FrankaRobotModel(arm_id_ + "/" + k_robot_model_interface_name,
+  franka_robot_model_ = std::make_unique<FrankaRobotModelExtended>(
+                          FrankaRobotModelExtended(arm_id_ + "/" + k_robot_model_interface_name,
                                                    arm_id_ + "/" + k_robot_state_interface_name));
+
+  state_in_JS_ = std::make_shared<State_in_Joint_Space>();
+  task_space_controller_ = std::make_shared<Task_Space_Controller>( Lambda_d_ts_, K_d_ts_, D_d_ts_, K_D_ts_ );
+  joint_space_controller_ = std::make_shared<Joint_Space_Controller>( k_gains_js_, d_gains_js_ );
 
   return CallbackReturn::SUCCESS;
 }
@@ -134,24 +137,35 @@ CallbackReturn Impedance_Controller::on_configure( const rclcpp_lifecycle::State
 /// @return 
 CallbackReturn Impedance_Controller::on_activate( const rclcpp_lifecycle::State& ) 
 {
-  updateJointStates();
-  dq_filtered_.setZero();
+  update_Joint_States();
   Vector7d joint_positions_current_eigen(joint_positions_current_.data());
-  initial_q_ = joint_positions_current_eigen;
-  elapsed_time_ = 0.0;
+  Vector7d initial_q = joint_positions_current_eigen;
 
   //test
-  joint_positions_desired_.reserve(num_joints_);
   joint_positions_current_.reserve(num_joints_);
   joint_velocities_current_.reserve(num_joints_);
 
   franka_robot_model_->assign_loaned_state_interfaces(state_interfaces_);
 
+  update_state_in_JS_();
+
+  std::array<double, 16> init_pose_array = franka_robot_model_->getPoseMatrix( franka::Frame::kEndEffector );
+  Eigen::Matrix<double, 4, 4> init_pose = Eigen::Map<Eigen::Matrix<double, 4, 4>> (init_pose_array.data());
+
+  state_in_JS_->joint_state_init( initial_q, init_pose );
+  const franka::RobotState* robot_state_ptr = franka_robot_model_->getRobotState();
+  std::array< double, 16 > O_T_EE_array = robot_state_ptr->O_T_EE;
+  Eigen::Matrix4d O_T_EE = Eigen::Map<Eigen::Matrix4d>(O_T_EE_array.data());
+  state_in_JS_->init_base_T_EE( O_T_EE );
+
+  task_space_controller_->init( state_in_JS_ );
+  joint_space_controller_->init( state_in_JS_ );
+
   return CallbackReturn::SUCCESS;
 }
 
 
-void Impedance_Controller::updateJointStates() {
+void Impedance_Controller::update_Joint_States() {
   for (auto i = 0; i < num_joints; ++i) 
   {
     const auto& position_interface = state_interfaces_.at(2 * i);
@@ -163,66 +177,102 @@ void Impedance_Controller::updateJointStates() {
     joint_positions_current_[i] = position_interface.get_value();
     joint_velocities_current_[i] = velocity_interface.get_value();
   }
+
+  Vector7d joint_positions_current_eigen(joint_positions_current_.data());
+  Vector7d joint_velocities_current_eigen(joint_velocities_current_.data());
+  state_in_JS_->update_joint_state( joint_positions_current_eigen, joint_velocities_current_eigen );
 }
 
 
-Eigen::Vector3d Impedance_Controller::compute_new_position() 
+bool Impedance_Controller::update_state_in_JS_() 
 {
-  elapsed_time_ = elapsed_time_ + trajectory_period_;
-  double radius = 0.1;
+  std::array<double, 49> mass_matrix_array = franka_robot_model_->getMassMatrix();
+  Eigen::Matrix<double, 7, 7> joint_mass_matrix = Eigen::Map<Eigen::Matrix<double, 7, 7>> (mass_matrix_array.data());
 
-  double angle = M_PI / 4 * (1 - std::cos(M_PI / 5.0 * elapsed_time_));
+  std::array<double, 7> coriolis_force_array = franka_robot_model_->getCoriolisForceVector();
+  Vector7d joint_coriolis_force = Eigen::Map<Vector7d> (coriolis_force_array.data());
 
-  double delta_x = radius * std::sin(angle);
-  double delta_z = radius * (std::cos(angle) - 1);
+  std::array<double, 7> gravity_force_array = franka_robot_model_->getGravityForceVector();
+  Vector7d joint_gravity_force = Eigen::Map<Vector7d> (gravity_force_array.data());
 
-  Eigen::Vector3d new_position = position_;
-  new_position.x() -= delta_x;
-  new_position.z() -= delta_z;
+  std::array<double, 16> pose_array = franka_robot_model_->getPoseMatrix( franka::Frame::kEndEffector );
+  Eigen::Matrix<double, 4, 4> pose = Eigen::Map<Eigen::Matrix<double, 4, 4>> (pose_array.data());
 
-  return new_position;
+  std::array<double, 42> zero_jacobian_array = franka_robot_model_->getZeroJacobian( franka::Frame::kEndEffector );
+  Eigen::Matrix<double, 6, 7> zero_jacobian = Eigen::Map<Eigen::Matrix<double, 6, 7>> (zero_jacobian_array.data());
+  Eigen::Matrix<double, 3, 7> jacobian = zero_jacobian.topRows(3);
+
+  state_in_JS_->update( joint_mass_matrix, joint_coriolis_force, joint_gravity_force, pose, zero_jacobian, jacobian );
+
+  Eigen::Matrix3d Lambda = (state_in_JS_->jacobian_ * state_in_JS_->joint_mass_matrix_.inverse() * state_in_JS_->jacobian_.transpose()).inverse();
+  update_jacobian_pseudo_inverse( Lambda );
+
+  // 获取robot_state的指针
+  const franka::RobotState* robot_state_ptr = franka_robot_model_->getRobotState();
+
+  std::array< double, 6 > wrench_ext_array = robot_state_ptr->O_F_ext_hat_K;
+  Eigen::Matrix<double, 6, 1> wrench_ext = Eigen::Map<Eigen::Matrix<double, 6, 1>>(wrench_ext_array.data());
+  state_in_JS_->update_wrench( wrench_ext );
+
+  std::array< double, 16 > O_T_EE_array = robot_state_ptr->O_T_EE;
+  Eigen::Matrix4d O_T_EE = Eigen::Map<Eigen::Matrix4d>(O_T_EE_array.data());
+  state_in_JS_->update_base_T_EE( O_T_EE );
+
+  return true;  
 }
 
 
-Vector7d Impedance_Controller::compute_new_position( const rclcpp::Duration& period )
+/// @brief 
+/// @param Lambda 
+/// @return 
+bool Impedance_Controller::update_jacobian_pseudo_inverse( Eigen::Matrix3d &Lambda )
 {
-  Vector7d q_goal = initial_q_;
-  elapsed_time_ = elapsed_time_ + period.seconds();
+    Eigen::Matrix<double, 7, 3> jacobian_pseudo_inverse = state_in_JS_->joint_mass_matrix_.inverse() * state_in_JS_->jacobian_.transpose() * Lambda;
+            // joint_mass_matrix_.inverse() * jacobian_.transpose() * (jacobian_ * joint_mass_matrix_.inverse() * jacobian_.transpose()).inverse()
+    state_in_JS_->update_Pseudo_inverse( jacobian_pseudo_inverse );
 
-  double delta_angle = M_PI / 8.0 * (1 - std::cos(M_PI / 2.5 * elapsed_time_));
-  q_goal(3) += delta_angle;
-  q_goal(4) += delta_angle;
-
-  return q_goal;
+    return true;
 }
 
 
 bool Impedance_Controller::assign_parameters() 
 {
   arm_id_ = get_node()->get_parameter("arm_id").as_string();
-  auto k_gains = get_node()->get_parameter("k_gains").as_double_array();
-  auto d_gains = get_node()->get_parameter("d_gains").as_double_array();
-  if (k_gains.empty()) {
-    RCLCPP_FATAL(get_node()->get_logger(), "k_gains parameter not set");
+  controller_type_ = get_node()->get_parameter("controller").as_string();
+  if( controller_type_ != "task_space_controller" && controller_type_ != "joint_space_controller" ) 
+  {
+    RCLCPP_FATAL(get_node()->get_logger(), "Invalid controller type: %s. Must be 'task_space_controller' or 'joint_space_controller'", controller_type_.c_str() );
     return false;
   }
-  if (k_gains.size() != static_cast<uint>(num_joints_)) {
-    RCLCPP_FATAL(get_node()->get_logger(), "k_gains should be of size %d but is of size %ld",
-                 num_joints_, k_gains.size());
+
+  Lambda_d_ts_ = get_node()->get_parameter("Lambda_d_ts").as_double();
+  K_d_ts_ = get_node()->get_parameter("K_d_ts").as_double();
+  D_d_ts_ = get_node()->get_parameter("D_d_ts").as_double();
+  K_D_ts_ = get_node()->get_parameter("K_D_ts").as_double();
+
+  auto k_gains_js = get_node()->get_parameter("k_gains_js").as_double_array();
+  auto d_gains_js = get_node()->get_parameter("d_gains_js").as_double_array();
+  if (k_gains_js.empty()) {
+    RCLCPP_FATAL(get_node()->get_logger(), "k_gains_js parameter not set");
     return false;
   }
-  if (d_gains.empty()) {
-    RCLCPP_FATAL(get_node()->get_logger(), "d_gains parameter not set");
+  if (k_gains_js.size() != static_cast<uint>(num_joints_)) {
+    RCLCPP_FATAL(get_node()->get_logger(), "k_gains_js should be of size %d but is of size %ld",
+                 num_joints_, k_gains_js.size());
     return false;
   }
-  if (d_gains.size() != static_cast<uint>(num_joints_)) {
-    RCLCPP_FATAL(get_node()->get_logger(), "d_gains should be of size %d but is of size %ld",
-                 num_joints_, d_gains.size());
+  if (d_gains_js.empty()) {
+    RCLCPP_FATAL(get_node()->get_logger(), "d_gains_js parameter not set");
+    return false;
+  }
+  if (d_gains_js.size() != static_cast<uint>(num_joints_)) {
+    RCLCPP_FATAL(get_node()->get_logger(), "d_gains_js should be of size %d but is of size %ld",
+                 num_joints_, d_gains_js.size());
     return false;
   }
   for (int i = 0; i < num_joints_; ++i) {
-    d_gains_(i) = d_gains.at(i);
-    k_gains_(i) = k_gains.at(i);
+    d_gains_js_(i) = d_gains_js.at(i);
+    k_gains_js_(i) = k_gains_js.at(i);
   }
 
   return true;
