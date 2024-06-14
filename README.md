@@ -9,8 +9,10 @@ With this Repo, you can control Franka Emika robot (Version: Panda, see below) i
 Refering build section fo setup the package:
 - [Prerequisites](#prerequisites)
 - [Build](#build)
+- [Run](#run)
 
-Following the brief introduction for different impedance controller in the Repo:
+Following the brief introduction for different impedance controller paramerters in the Repo:
+- [Parameters](#parameters)
 - [Joint Space](#joint-space-impedance-controller)
 - [Task Space](#task-space-impedance-controller-with-null-space-damping)
 
@@ -31,15 +33,15 @@ Following the brief introduction for different impedance controller in the Repo:
 
 3. __Communication with Real Robot Hardware__
 
-   3.1 Open the browser and navigate to `https://192.168.2.55/desk/`.
+   3.1  Open the browser and navigate to `https://192.168.2.55/desk/`.
 
-   3.2 Open fail-safe locking system.
+   3.2  Open fail-safe locking system.
 
-   3.3 Activate FCI.
+   3.3  Activate FCI.
 
-   3.4 Operations should be in `Execution` Mode.
+   3.4  Operations should be in `Execution` Mode.
 
-   3.5 Ensure the indicator light shows **green**.
+   3.5  Ensure the indicator light shows **green**.
 
 
 ## Build
@@ -70,8 +72,36 @@ Run the launch file
 ros2 launch force_control impedance_controller.launch.py robot_ip:=192.168.2.55
 ```
 
-## Parameter
+## Parameters
 
+You can change the parameters in `./config/controller.yaml`.
 
+    Controller Type: 
+        
+        `controller`: `task_space_controller` or `joint_space_controller`
+
+    Joint Space Controller:
+
+        `k_gains_js`: Used to define the spring-like behavior of the robot's end-effector.
+
+        `d_gains_js`: Used to define the damping behavior in the impedance control.
+    
+    Task Space Controller:
+
+        `Lambda_d_ts`: **Desired Inertia Matrix**
+                       
+        Represents the desired task space inertia for the robot's end-effector.
+
+        `K_d_ts`: **Desired Stiffness Matrix**
+
+        Determines how the robot should resist deviations from a desired position in the task space.
+
+        `D_d_ts`: **Desired Damping Matrix**
+                  
+        Specifies the desired damping characteristics in the task space. It defines how the system should dissipate energy to counteract the velocity of the end-effector, providing stability and reducing oscillations.
+
+        `K_D_ts`: **Null Space Damping Gain**
+                  
+        Used to apply damping in the null space of the robot's configuration. This parameter helps stabilize the redundant degrees of freedom (DOFs), ensuring smooth and stable motion.
 
 
