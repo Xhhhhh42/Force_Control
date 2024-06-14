@@ -1,8 +1,9 @@
 # Impedance Controller
 Maintainer: Yuchen Xia
+
 Main Supervisor: Jiayun Li
 
-## Introduce
+## Introduction 
 With this Repo, you can control Franka Emika robot( Version: Panda ) in Joint Space or in Task Space with Null Space Damping.
 
 Refering build section fo setup the package:
@@ -12,6 +13,8 @@ Refering build section fo setup the package:
 Following the brief introduction for different impedance controller in the Repo:
 - [Joint Space](#joint-space-impedance-controller)
 - [Task Space](#task-space-impedance-controller-with-null-space-damping)
+
+<img src="./doc/roboter_arm.jpg" alt="Panda Robot" width="800" height="550">
 
 
 ## Prerequisites
