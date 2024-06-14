@@ -4,7 +4,7 @@ Maintainer: Yuchen Xia
 Main Supervisor: Jiayun Li
 
 ## Introduction 
-With this Repo, you can control Franka Emika robot( Version: Panda, see below ) in **Joint Space** or in **Task Space** with Null Space Damping.
+With this Repo, you can control Franka Emika robot (Version: Panda, see below) in **Joint Space** or in **Task Space** with Null Space Damping.
 
 Refering build section fo setup the package:
 - [Prerequisites](#prerequisites)
@@ -20,22 +20,26 @@ Following the brief introduction for different impedance controller in the Repo:
 ## Prerequisites
 1. __Ubuntu and ROS__
 
-This package is intended to be used with Ubuntu 22.04 and ROS Humble.
+   This package is intended to be used with Ubuntu 22.04 and ROS Humble.
 
 2. __Dependencies__
 
-First you need to install the following dependencies:
-<!-- * [libfranka](https://github.com/frankaemika/libfranka) -->
-* [franka_ros2](https://github.com/frankaemika/franka_ros2)
-( The franka_ros2 repo contains a ROS 2 integration of libfranka. See the [Franka Control Interface (FCI) documentation](https://frankaemika.github.io/docs/franka_ros2.html) for more information of franka_ros2. )
+   First you need to install the following dependencies:
+   <!-- * [libfranka](https://github.com/frankaemika/libfranka) -->
+   * [franka_ros2](https://github.com/frankaemika/franka_ros2)
+   ( The franka_ros2 repo contains a ROS 2 integration of libfranka. See the [Franka Control Interface (FCI) documentation](https://frankaemika.github.io/docs/franka_ros2.html) for more information about franka_ros2. )
 
 3. __Communication with Real Robot Hardware__
 
-3.1 Open the browser with `https://192.168.2.55/desk/`.
-3.2 Open fail safe locking system.
-3.3 Activate FCI.
-3.4 Operations in `Execution` Mode.
-3.5 Indicator light shows **green**.
+   3.1 Open the browser and navigate to `https://192.168.2.55/desk/`.
+
+   3.2 Open fail-safe locking system.
+
+   3.3 Activate FCI.
+
+   3.4 Operations should be in `Execution` Mode.
+
+   3.5 Ensure the indicator light shows **green**.
 
 
 ## Build
@@ -54,7 +58,8 @@ git clone https://...
 cd ..
 
 colcon build force_control
-or colcon build --packages-select force_control // Compile specific package
+# or compile a specific package
+colcon build --packages-select force_control 
 
 source install/setup.bash
 ```
