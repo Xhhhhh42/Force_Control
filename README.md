@@ -14,7 +14,7 @@ Following the brief introduction for different impedance controller in the Repo:
 - [Joint Space](#joint-space-impedance-controller)
 - [Task Space](#task-space-impedance-controller-with-null-space-damping)
 
-<img src="./doc/roboter_arm.jpg" alt="Panda Robot" width="400" height="550">
+<img src="./doc/roboter_arm.jpg" alt="Panda Robot" width="500" height="500">
 
 
 ## Prerequisites
@@ -48,6 +48,15 @@ or colcon build --packages-select force_control // Compile specific package
 
 source <your_workspace>/install/setup.bash
 ```
+
+## Run
+Run the launch file
+```
+ros2 launch force_control impedance_controller.launch.py robot_ip:=192.168.2.55
+```
+
+## Parameter
+
 
 
 
