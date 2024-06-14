@@ -19,9 +19,7 @@ With this Repo, you can control **Franka Emika robot** in Lab (Version: **Panda*
 <p align="center">
 <img src="./doc/roboter_arm.jpg" alt="Panda Robot" width="500" height="500">
 </p>
-<!-- <div style="text-align: center;">
-  <img src="./doc/roboter_arm.jpg" alt="Panda_Robot" width="500" height="500">
-</div> -->
+
 
 ## Prerequisites
 1. __Ubuntu and ROS__

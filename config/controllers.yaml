@@ -16,7 +16,7 @@ impedance_controller:
     arm_id: panda
     controller: task_space_controller
 
-    Lambda_d_ts: 0.4
+    Lambda_d_ts: 1.0
     K_d_ts: 150.0
     D_d_ts: 30.0
     K_D_ts: 1.0

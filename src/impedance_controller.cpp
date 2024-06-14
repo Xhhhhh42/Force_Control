@@ -1,3 +1,4 @@
+#include <force_control/common.h>
 #include <force_control/impedance_controller.hpp>
 
 #include <cassert>
@@ -204,7 +205,8 @@ bool Impedance_Controller::update_state_in_JS_()
 
   state_in_JS_->update( joint_mass_matrix, joint_coriolis_force, joint_gravity_force, pose, zero_jacobian, jacobian );
 
-  Eigen::Matrix3d Lambda = (state_in_JS_->jacobian_ * state_in_JS_->joint_mass_matrix_.inverse() * state_in_JS_->jacobian_.transpose()).inverse();
+  // Eigen::Matrix3d Lambda = (state_in_JS_->jacobian_ * state_in_JS_->joint_mass_matrix_.inverse() * state_in_JS_->jacobian_.transpose()).inverse();
+  Eigen::Matrix3d Lambda = (state_in_JS_->jacobian_ * inverse_semi( state_in_JS_->joint_mass_matrix_ ) * state_in_JS_->jacobian_.transpose()).inverse();
   update_jacobian_pseudo_inverse( Lambda );
 
   // 获取robot_state的指针
@@ -227,7 +229,8 @@ bool Impedance_Controller::update_state_in_JS_()
 /// @return 
 bool Impedance_Controller::update_jacobian_pseudo_inverse( Eigen::Matrix3d &Lambda )
 {
-    Eigen::Matrix<double, 7, 3> jacobian_pseudo_inverse = state_in_JS_->joint_mass_matrix_.inverse() * state_in_JS_->jacobian_.transpose() * Lambda;
+    // Eigen::Matrix<double, 7, 3> jacobian_pseudo_inverse = state_in_JS_->joint_mass_matrix_.inverse() * state_in_JS_->jacobian_.transpose() * Lambda;
+    Eigen::Matrix<double, 7, 3> jacobian_pseudo_inverse = force_control::inverse_semi( state_in_JS_->joint_mass_matrix_ ) * state_in_JS_->jacobian_.transpose() * Lambda;
             // joint_mass_matrix_.inverse() * jacobian_.transpose() * (jacobian_ * joint_mass_matrix_.inverse() * jacobian_.transpose()).inverse()
     state_in_JS_->update_Pseudo_inverse( jacobian_pseudo_inverse );
 

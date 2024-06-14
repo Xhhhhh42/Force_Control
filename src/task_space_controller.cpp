@@ -1,4 +1,5 @@
 #include <force_control/task_space_controller.hpp>
+#include <force_control/common.h>
 
 // log
 #include <rclcpp/rclcpp.hpp>
@@ -16,24 +17,24 @@ Task_Space_Controller::Task_Space_Controller( double &Lambda_d_ts, double &K_d_t
     K_D_ = Eigen::Matrix<double, 7, 7>::Identity() * K_D_ts;
     inited_ = false;
 
-    out.open("/home/forcecontrol/Downloads/output.txt", std::ios::trunc);
-    if (!out.is_open()) {
-        RCLCPP_FATAL(rclcpp::get_logger("Unable to open log file"), "noopen");
-    }
-    out.close();
+    // out.open("/home/forcecontrol/Downloads/output.txt", std::ios::trunc);
+    // if (!out.is_open()) {
+    //     RCLCPP_FATAL(rclcpp::get_logger("Unable to open log file"), "noopen");
+    // }
+    // out.close();
 
-    out.open("/home/forcecontrol/Downloads/output.txt", std::ios::app);
-    if (out.is_open()) {
-        out << "--------------------------Parameters-------------------------------------" << std::endl;
-        out<<std::fixed<<std::setprecision(4) << "Lambda_d_ts:   " <<Lambda_d_ts<< std::endl;
-        out<<std::fixed<<std::setprecision(4) << "K_d_ts:   " <<K_d_ts<< std::endl;
-        out<<std::fixed<<std::setprecision(4) << "D_d_ts:   " <<D_d_ts<< std::endl;
-        out<<std::fixed<<std::setprecision(4) << "K_D_ts:   " <<K_D_ts<< std::endl;
-        out << "-------------------------------------------------------------------------" << std::endl;
-        out.close(); // Close the file after logging data
-    } else {
-        std::cerr << "Unable to open log file\n";
-    }
+    // out.open("/home/forcecontrol/Downloads/output.txt", std::ios::app);
+    // if (out.is_open()) {
+    //     out << "--------------------------Parameters-------------------------------------" << std::endl;
+    //     out<<std::fixed<<std::setprecision(4) << "Lambda_d_ts:   " <<Lambda_d_ts<< std::endl;
+    //     out<<std::fixed<<std::setprecision(4) << "K_d_ts:   " <<K_d_ts<< std::endl;
+    //     out<<std::fixed<<std::setprecision(4) << "D_d_ts:   " <<D_d_ts<< std::endl;
+    //     out<<std::fixed<<std::setprecision(4) << "K_D_ts:   " <<K_D_ts<< std::endl;
+    //     out << "-------------------------------------------------------------------------" << std::endl;
+    //     out.close(); // Close the file after logging data
+    // } else {
+    //     std::cerr << "Unable to open log file\n";
+    // }
 }
 
 
@@ -65,16 +66,16 @@ void Task_Space_Controller::update_Task_State()
     error.head(3) << x_ - xd_;
 
     
-    out.open("/home/forcecontrol/Downloads/output.txt", std::ios::app);
-    if (out.is_open()) {
-        out<<std::fixed<<std::setprecision(4) << "xd_:   " <<xd_[0]<<","<<xd_[1]<<","<<xd_[2] << std::endl;
-        out<<std::fixed<<std::setprecision(4) << "x_:    " <<x_[0]<<","<<x_[1]<<","<<x_[2] << std::endl;
-        out<<std::fixed<<std::setprecision(4) << "Error: " <<error[0]<<","<<error[1]<<","<<error[2] << std::endl;
-        out << "-------------------------------------------------------------------------" << std::endl;
-        out.close(); // Close the file after logging data
-    } else {
-        std::cerr << "Unable to open log file\n";
-    }
+    // out.open("/home/forcecontrol/Downloads/output.txt", std::ios::app);
+    // if (out.is_open()) {
+    //     out<<std::fixed<<std::setprecision(4) << "xd_:   " <<xd_[0]<<","<<xd_[1]<<","<<xd_[2] << std::endl;
+    //     out<<std::fixed<<std::setprecision(4) << "x_:    " <<x_[0]<<","<<x_[1]<<","<<x_[2] << std::endl;
+    //     out<<std::fixed<<std::setprecision(4) << "Error: " <<error[0]<<","<<error[1]<<","<<error[2] << std::endl;
+    //     out << "-------------------------------------------------------------------------" << std::endl;
+    //     out.close(); // Close the file after logging data
+    // } else {
+    //     std::cerr << "Unable to open log file\n";
+    // }
 
     // orientation error
     // "difference" quaternion
@@ -89,10 +90,10 @@ void Task_Space_Controller::update_Task_State()
 
     x_dot_ = state_in_JS_->jacobian_ * state_in_JS_->dq_;
 
-    Eigen::Matrix3d Lambda = (state_in_JS_->jacobian_ * state_in_JS_->joint_mass_matrix_.inverse() * state_in_JS_->jacobian_.transpose()).inverse();
+    // Eigen::Matrix3d Lambda = (state_in_JS_->jacobian_ * state_in_JS_->joint_mass_matrix_.inverse() * state_in_JS_->jacobian_.transpose()).inverse();
+    Eigen::Matrix3d Lambda = (state_in_JS_->jacobian_ * inverse_semi( state_in_JS_->joint_mass_matrix_ ) * state_in_JS_->jacobian_.transpose()).inverse();
     // Eigen::Vector3d Fg = state_in_JS_->jacobian_pseudo_inverse_.transpose() * state_in_JS_->joint_gravity_force_;
     // Eigen::Vector3d mu = Lambda * ();
-
     print_lambda = Lambda;
 
     // Eigen::Vector3d F_ext = state_in_JS_->wrench_ext_.head<3>();
@@ -101,6 +102,7 @@ void Task_Space_Controller::update_Task_State()
     // last_Fex_ = F_ext;
 
     Eigen::Vector3d F_ext;
+    F_ext.setZero();
 
     updateTaskSpaceControl( Lambda, x_, xd_, x_dot_, x_dot_d_, x_ddot_d_, F_ext );
 }
@@ -123,15 +125,15 @@ bool Task_Space_Controller::updateTaskSpaceControl(
     Eigen::Vector3d x_error = calculateError(x, xd);
     Eigen::Vector3d x_dot_error = x_dot - x_dot_d;
 
-    out.open("/home/forcecontrol/Downloads/output.txt", std::ios::app);
-    if (out.is_open()) {
-        out<<std::fixed<<std::setprecision(4) << "x_error:   " <<x_error[0]<<","<<x_error[1]<<","<<x_error[2] << std::endl;
-        out<<std::fixed<<std::setprecision(4) << "x_dot_error:    " <<x_dot_error[0]<<","<<x_dot_error[1]<<","<<x_dot_error[2] << std::endl;
-        out << "-------------------------------------------------------------------------" << std::endl;
-        out.close(); // Close the file after logging data
-    } else {
-        std::cerr << "Unable to open log file\n";
-    }
+    // out.open("/home/forcecontrol/Downloads/output.txt", std::ios::app);
+    // if (out.is_open()) {
+    //     out<<std::fixed<<std::setprecision(4) << "x_error:   " <<x_error[0]<<","<<x_error[1]<<","<<x_error[2] << std::endl;
+    //     out<<std::fixed<<std::setprecision(4) << "x_dot_error:    " <<x_dot_error[0]<<","<<x_dot_error[1]<<","<<x_dot_error[2] << std::endl;
+    //     out << "-------------------------------------------------------------------------" << std::endl;
+    //     out.close(); // Close the file after logging data
+    // } else {
+    //     std::cerr << "Unable to open log file\n";
+    // }
     
     Eigen::Vector3d F_c = Lambda * (Lambda_d_.inverse() * (-Kd_ * x_error - Dd_ * x_dot_error) + x_ddot_d) 
                            + (Lambda * Lambda_d_.inverse() - Eigen::Matrix3d::Identity()) * F_ext;
@@ -141,17 +143,17 @@ bool Task_Space_Controller::updateTaskSpaceControl(
     print1_3 = -Kd_ * x_error - Dd_ * x_dot_error;
     print2 = (Lambda * Lambda_d_.inverse() - Eigen::Matrix3d::Identity()) * F_ext;
 
-    out.open("/home/forcecontrol/Downloads/output.txt", std::ios::app);
-    if (out.is_open()) {
-        out<<std::fixed<<std::setprecision(4) << "F_ext:   " <<F_ext[0]<<","<<F_ext[1]<<","<<F_ext[2] << std::endl;
-        out<<std::fixed<<std::setprecision(4) << "(Lambda * Lambda_d_.inverse() - Eigen::Matrix3d::Identity()) * F_ext:    " <<print2[0]<<","<<print2[1]<<","<<print2[2] << std::endl;
-        out<<std::fixed<<std::setprecision(4) << "-Kd * x_error - Dd * x_dot_error:    " <<print1_3[0]<<","<<print1_3[1]<<","<<print1_3[2] << std::endl;        
-        out<<std::fixed<<std::setprecision(4) << "Lambda * (Lambda_d.inverse() * (-Kd * x_error - Dd * x_dot_error) + x_ddot_d):    " <<print1[0]<<","<<print1[1]<<","<<print1[2] << std::endl;        
-        out << "-------------------------------------------------------------------------" << std::endl;
-        out.close(); // Close the file after logging data
-    } else {
-        std::cerr << "Unable to open log file\n";
-    }
+    // out.open("/home/forcecontrol/Downloads/output.txt", std::ios::app);
+    // if (out.is_open()) {
+    //     out<<std::fixed<<std::setprecision(4) << "F_ext:   " <<F_ext[0]<<","<<F_ext[1]<<","<<F_ext[2] << std::endl;
+    //     out<<std::fixed<<std::setprecision(4) << "(Lambda * Lambda_d_.inverse() - Eigen::Matrix3d::Identity()) * F_ext:    " <<print2[0]<<","<<print2[1]<<","<<print2[2] << std::endl;
+    //     out<<std::fixed<<std::setprecision(4) << "-Kd * x_error - Dd * x_dot_error:    " <<print1_3[0]<<","<<print1_3[1]<<","<<print1_3[2] << std::endl;        
+    //     out<<std::fixed<<std::setprecision(4) << "Lambda * (Lambda_d.inverse() * (-Kd * x_error - Dd * x_dot_error) + x_ddot_d):    " <<print1[0]<<","<<print1[1]<<","<<print1[2] << std::endl;        
+    //     out << "-------------------------------------------------------------------------" << std::endl;
+    //     out.close(); // Close the file after logging data
+    // } else {
+    //     std::cerr << "Unable to open log file\n";
+    // }
 
     state_in_TS_->update_Fc( F_c );
     return true;
@@ -188,20 +190,20 @@ Eigen::Matrix<double, 7, 1> Task_Space_Controller::update()
     Vector7d tau_c = control_torque_in_JointSpace( state_in_JS_->jacobian_, state_in_TS_->F_c_ );
     tau_d_calculated = add_null_space_damping( tau_c, K_D_, state_in_JS_->jacobian_pseudo_inverse_ );
 
-    out.open("/home/forcecontrol/Downloads/output.txt", std::ios::app);
-    if (out.is_open()) {
-        out<<std::fixed<<std::setprecision(4) << "F_c_:   " <<state_in_TS_->F_c_[0]<<","<<state_in_TS_->F_c_[1]<<","<<state_in_TS_->F_c_[2] << std::endl;
-        out<<std::fixed<<std::setprecision(4) << "control_torque_in_JointSpace:   " <<tau_c[0]<<","<<tau_c[1]<<","<<tau_c[2] 
-                                                                        <<","<<tau_c[3]<<","<<tau_c[4]<<","<<tau_c[5]
-                                                                        <<","<<tau_c[6]<< std::endl;
-        out<<std::fixed<<std::setprecision(4) << "task_controller:   " <<tau_d_calculated[0]<<","<<tau_d_calculated[1]<<","<<tau_d_calculated[2] 
-                                                                        <<","<<tau_d_calculated[3]<<","<<tau_d_calculated[4]<<","<<tau_d_calculated[5]
-                                                                        <<","<<tau_d_calculated[6]<< std::endl;
-        out << "-------------------------------------------------------------------------" << std::endl;
-        out.close(); // Close the file after logging data
-    } else {
-        std::cerr << "Unable to open log file\n";
-    }
+    // out.open("/home/forcecontrol/Downloads/output.txt", std::ios::app);
+    // if (out.is_open()) {
+    //     out<<std::fixed<<std::setprecision(4) << "F_c_:   " <<state_in_TS_->F_c_[0]<<","<<state_in_TS_->F_c_[1]<<","<<state_in_TS_->F_c_[2] << std::endl;
+    //     out<<std::fixed<<std::setprecision(4) << "control_torque_in_JointSpace:   " <<tau_c[0]<<","<<tau_c[1]<<","<<tau_c[2] 
+    //                                                                     <<","<<tau_c[3]<<","<<tau_c[4]<<","<<tau_c[5]
+    //                                                                     <<","<<tau_c[6]<< std::endl;
+    //     out<<std::fixed<<std::setprecision(4) << "task_controller:   " <<tau_d_calculated[0]<<","<<tau_d_calculated[1]<<","<<tau_d_calculated[2] 
+    //                                                                     <<","<<tau_d_calculated[3]<<","<<tau_d_calculated[4]<<","<<tau_d_calculated[5]
+    //                                                                     <<","<<tau_d_calculated[6]<< std::endl;
+    //     out << "-------------------------------------------------------------------------" << std::endl;
+    //     out.close(); // Close the file after logging data
+    // } else {
+    //     std::cerr << "Unable to open log file\n";
+    // }
 
     return tau_d_calculated;
 }
