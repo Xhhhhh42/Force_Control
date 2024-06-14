@@ -29,6 +29,15 @@ First you need to install the following dependencies:
 * [franka_ros2](https://github.com/frankaemika/franka_ros2)
 ( The franka_ros2 repo contains a ROS 2 integration of libfranka. See the [Franka Control Interface (FCI) documentation](https://frankaemika.github.io/docs/franka_ros2.html) for more information of franka_ros2. )
 
+3. __Communication with Real Robot Hardware__
+
+3.1 Open the browser with `https://192.168.2.55/desk/`.
+3.2 Open fail safe locking system.
+3.3 Activate FCI.
+3.4 Operations in `Execution` Mode.
+3.5 Indicator light shows **green**.
+
+
 ## Build
 Create a ROS 2 workspace:
 
@@ -36,17 +45,18 @@ Create a ROS 2 workspace:
 mkdir -p ~/franka_ros2_ws/src
 ```
 
+
 If already done so, clone repo `Force_Control` to your workspace and build packages:
 
 ```
-cd <your_workspace>/src
+cd franka_ros2_ws/src
 git clone https://...
 cd ..
 
 colcon build force_control
 or colcon build --packages-select force_control // Compile specific package
 
-source <your_workspace>/install/setup.bash
+source install/setup.bash
 ```
 
 ## Run
