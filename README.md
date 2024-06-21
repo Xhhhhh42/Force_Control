@@ -114,3 +114,13 @@ You can change the parameters in `./config/controller.yaml`.
    Used to apply damping in the null space of the robot's configuration. This parameter helps stabilize the redundant degrees of freedom (DOFs), ensuring smooth and stable motion.
 
 
+## Robot Data Record wtih Given Trajectory (Joint Position, Velocity, Acceleration)
+
+Record the robot state data in the folder `./data_log/data_log.dat`. The description of the data rows is in `./data_log/data_description.txt`.
+Input trajectory in the folder...
+
+Run the launch file:
+```
+ros2 launch force_control trajectory_datarecord_controller.launch.py robot_ip:=192.168.2.55
+```
+
