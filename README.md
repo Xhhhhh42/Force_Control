@@ -16,6 +16,8 @@ With this Repo, you can control **Franka Emika robot** in Lab (Version: **Panda*
     - [Joint Space](#joint-space-impedance-controller)
     - [Task Space](#task-space-impedance-controller-with-null-space-damping)
 
+3. - [Robot Data Record wtih Given Trajectory (Joint Position, Velocity, Acceleration)](#robot-data-record-wtih-given-trajectory-(joint-position,velocity,-Acceleration))
+
 <p align="center">
 <img src="./doc/roboter_arm.jpg" alt="Panda Robot" width="500" height="500">
 </p>
@@ -117,6 +119,7 @@ You can change the parameters in `./config/controller.yaml`.
 ## Robot Data Record wtih Given Trajectory (Joint Position, Velocity, Acceleration)
 
 Record the robot state data in the folder `./data_log/data_log.dat`. The description of the data rows is in `./data_log/data_description.txt`.
+
 Input trajectory in the folder...
 
 Run the launch file:
