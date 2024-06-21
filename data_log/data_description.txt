@@ -1,0 +1,11 @@
+rows:   timestamp(1) 
+        q_real(7) 
+        q_ref(7) 
+        qDot_real(7) 
+        qDot_ref(7) 
+        ?u(7)? 
+        torques_real(7) 
+        G_org(7) || vector gravity
+        C_org(7) || vector coriolis
+        qDDot_ref(7)
+        M_org(7x7) || inertia matrix

@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.8)
-project(force_control)
+project(force_control)       
+
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -26,6 +27,7 @@ add_library(
         src/state_in_task_space.cpp
         src/task_space_controller.cpp
         src/joint_space_controller.cpp
+        src/trajectory_datarecord_controller.cpp
 )
 
 target_include_directories(

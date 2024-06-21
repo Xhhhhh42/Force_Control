@@ -2,7 +2,13 @@
     <class name="force_control/Impedance_Controller"
            type="force_control::Impedance_Controller" base_class_type="controller_interface::ControllerInterface">
         <description>
-            The joint impedance example controller in a very compliant periodic movement.
+            The impedance controller in joint / task space.
+        </description>
+    </class>
+    <class name="force_control/Trajectory_Datarecord_Controller"
+           type="force_control::Trajectory_Datarecord_Controller" base_class_type="controller_interface::ControllerInterface">
+        <description>
+            The joint trajectory controller + realtime data record.
         </description>
     </class>
 </library>

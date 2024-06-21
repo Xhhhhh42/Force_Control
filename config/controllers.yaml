@@ -2,6 +2,9 @@ controller_manager:
   ros__parameters:
     update_rate: 1000  # Hz
 
+    trajectory_datarecord_controller:
+      type: force_control/Trajectory_Datarecord_Controller
+
     impedance_controller:
       type: force_control/Impedance_Controller
 
@@ -37,6 +40,30 @@ impedance_controller:
       - 8.0
       - 8.0
       - 4.0
+
+trajectory_datarecord_controller:
+  ros__parameters:
+    arm_id: panda
+    k_gains_js:
+      - 50.0
+      - 50.0
+      - 50.0
+      - 50.0
+      - 20.0
+      - 10.0
+      - 2.0
+    d_gains_js:
+      - 2.0
+      - 2.0
+      - 2.0
+      - 1.0
+      - 1.0
+      - 1.0
+      - 0.5
+    qref_filename: qref.csv
+    qdotref_filename: qdotref.csv
+    qddotref_filename: qddotref.csv
+    dataFile_filename: /home/forcecontrol/franka_ros2_ws/src/force_control/data_log/data_log.dat
 
 franka_robot_state_broadcaster:
   ros__parameters:
