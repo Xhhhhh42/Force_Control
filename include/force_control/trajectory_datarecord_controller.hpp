@@ -53,6 +53,8 @@ private:
 
   void writeVector7d( Eigen::Matrix<double, 7, 1> &data, std::ofstream &file );
 
+  bool returnOrigin();
+
   std::string arm_id_;
   const int num_joints = 7;
   Vector7d q_;
@@ -71,6 +73,12 @@ private:
   size_t curr_i_;
   std::ofstream dataFile_;
   std::string dataFile_filename_;
+  std::string input_filename_;
+  Vector7d q_origin_;
+  std::string origin_path_;
+  int traj_num_;
+
+  bool init_ = false;
 
   std::unique_ptr<franka_semantic_components::FrankaRobotModel> franka_robot_model_;
     
