@@ -29,7 +29,7 @@ Main Supervisor: Jiayun Li
 
 - Traj 8: Error: joint_velocity_violation.
 
-        ( __Top 3__, recommand params: slow_factor = 1.5, Iteration num: 16008 )
+        ( __Top 3__, recommand params: slow_factor = 1.8, Iteration num: 18008 )
 
 - Traj 9: Error: joint_velocity_violation.
 

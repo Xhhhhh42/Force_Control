@@ -2,9 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import CubicSpline
 
-traj_num = 20
+traj_num = 8
 
-slow_factor = 6
+slow_factor = 1.8
 
 dof = 7
 dt = 0.01

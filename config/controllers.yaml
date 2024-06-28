@@ -60,13 +60,10 @@ trajectory_datarecord_controller:
       - 1.0
       - 1.0
       - 0.5
-    # qref_filename: qref.csv
-    # qdotref_filename: qdotref.csv
-    # qddotref_filename: qddotref.csv
     dataFile_filename: /home/forcecontrol/franka_ros2_ws/src/force_control/data_log/data_log.dat
     input_filename: /home/forcecontrol/franka_ros2_ws/src/force_control/data_log/traj/data.txt
     origin_path: /home/forcecontrol/franka_ros2_ws/src/force_control/data_log/traj/trajectories/
-    traj_num: 20
+    traj_num: 8
 
 franka_robot_state_broadcaster:
   ros__parameters:

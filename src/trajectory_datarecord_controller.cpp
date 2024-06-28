@@ -83,17 +83,6 @@ controller_interface::return_type Trajectory_Datarecord_Controller::update(
     q_ddot_goal.setZero();
   }
 
-  
-  // if( curr_i_ < size_ref_ ) {
-  //   q_goal = q_ref_[curr_i_];
-  //   q_dot_goal = q_dot_ref_[curr_i_];
-  //   q_ddot_goal = q_ddot_ref_[curr_i_++];
-  // } else {
-  //   q_goal = q_;
-  //   q_dot_goal.setZero();
-  //   q_ddot_goal.setZero();
-  // }
-
   std::array<double, 7> coriolis_array = franka_robot_model_->getCoriolisForceVector();
   Vector7d coriolis(coriolis_array.data());
   std::array<double, 49> mass_matrix_array = franka_robot_model_->getMassMatrix();
@@ -254,15 +243,14 @@ bool Trajectory_Datarecord_Controller::assign_parameters()
   arm_id_ = get_node()->get_parameter("arm_id").as_string();
   auto k_gains_js = get_node()->get_parameter("k_gains_js").as_double_array();
   auto d_gains_js = get_node()->get_parameter("d_gains_js").as_double_array();
-  auto qref_filename = get_node()->get_parameter("qref_filename").as_string();
-  auto qdotref_filename = get_node()->get_parameter("qdotref_filename").as_string();
-  auto qddotref_filename = get_node()->get_parameter("qddotref_filename").as_string();
+  // auto qref_filename = get_node()->get_parameter("qref_filename").as_string();
+  // auto qdotref_filename = get_node()->get_parameter("qdotref_filename").as_string();
+  // auto qddotref_filename = get_node()->get_parameter("qddotref_filename").as_string();
   dataFile_filename_ = get_node()->get_parameter("dataFile_filename").as_string();
   input_filename_ = get_node()->get_parameter("input_filename").as_string();
   origin_path_ = get_node()->get_parameter("origin_path").as_string();
   traj_num_ = get_node()->get_parameter("traj_num").as_int();
   origin_path_ = origin_path_ + "Trajectory_" + std::to_string(traj_num_) + "/gen_q0.txt";
-  // std::cout << origin_path_ << std::endl;
 
   if (k_gains_js.empty()) {
     RCLCPP_FATAL(get_node()->get_logger(), "k_gains_js parameter not set");
@@ -286,15 +274,10 @@ bool Trajectory_Datarecord_Controller::assign_parameters()
     d_gains_js_(i) = d_gains_js.at(i);
     k_gains_js_(i) = k_gains_js.at(i);
   }
-  if( qref_filename.empty() || qdotref_filename.empty() || qddotref_filename.empty() || dataFile_filename_.empty() ) {
-    RCLCPP_FATAL(get_node()->get_logger(), "Unmatched CSV File name, please check");
-    return false;
-  } 
-
-  // // Read the goal positions from the CSV file
-  // readCSV(qref_filename, q_ref_);
-  // readCSV(qdotref_filename, q_dot_ref_);
-  // readCSV(qddotref_filename, q_ddot_ref_);
+  // if( qref_filename.empty() || qdotref_filename.empty() || qddotref_filename.empty() || dataFile_filename_.empty() ) {
+  //   RCLCPP_FATAL(get_node()->get_logger(), "Unmatched CSV File name, please check");
+  //   return false;
+  // } 
 
   std::ifstream file(input_filename_);
   if (!file.is_open()) {
@@ -376,7 +359,7 @@ bool Trajectory_Datarecord_Controller::returnOrigin()
   if( !init_ ) {
     Vector7d q_error = q_origin_ - q_;
     for (int i = 0; i < 4; i++)
-      { q_error[i] = std::max(-0.05, std::min(0.05, q_error[i])); }
+      { q_error[i] = std::max(-0.04, std::min(0.04, q_error[i])); }
     
     q_error[4] = std::max(-0.1, std::min(0.1, q_error[4]));
     q_error[5] = std::max(-0.1, std::min(0.1, q_error[5]));
