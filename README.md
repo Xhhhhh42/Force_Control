@@ -145,7 +145,7 @@ ros2 launch force_control trajectory_datarecord_controller.launch.py robot_ip:=1
 
 Develop details in folder `./data_log`
 
-<p align="center">
+<!-- <p align="center"> -->
 ![trajectory](./doc/Incentive_trajectory.gif)
-</p>
+<!-- </p> -->
 
